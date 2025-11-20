@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learning-platform
+  namespace: learning-platform
+  labels:
+        app: learning-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: learning-platform
+  template:
+    metadata:
+      labels:
+        app: learning-platform
+    spec:
+      securityContext:
+        fsGroup: 2000
+
+      # Attach Managed Identity
+      nodeSelector:
+        kubernetes.io/os: linux
+
+      # CSI + Pod Identity
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: lp-secret-provider
+
+      containers:
+        - name: api
+          image: useastacr.azurecr.io/learning-platform:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ENV
+              value: "production"
+
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lp-secrets
+                  key: AZURE_SQL_CONNECTION_STRING
+
+            - name: AZURE_SQL_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: lp-secrets
+                  key: AZURE_SQL_CONNECTION_STRING
+
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: lp-secrets
+                  key: AZURE_STORAGE_CONNECTION_STRING
+
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lp-secrets
+                  key: SESSION_SECRET
+
+          volumeMounts:
+          - name: secrets-store
+            mountPath: "/mnt/secrets"
+            readOnly: true

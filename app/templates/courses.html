@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="course-header">
+    <h1>{{ course.title }}</h1>
+    <p>{{ course.description }}</p>
+</div>
+
+<div class="course-container">
+
+    <img class="course-thumbnail" src="/static/images/{{ course.thumbnail_path }}" alt="Course Image">
+
+    <h2 style="color:white;">About This Course</h2>
+    <p>{{ course.description }}</p>
+
+    <h3 style="color:#00d4ff; margin-top:20px;">
+        Price: ${{ "%.2f" | format(course.price_cents / 100) }}
+    </h3>
+
+    {% if has_access %}
+        <a href="/lessons/{{ course.id }}" class="buy-btn" style="background:#4CAF50;">
+            Start Learning →
+        </a>
+    {% else %}
+        <a href="/payment/{{ course.id }}" class="buy-btn">
+            Buy Now →
+        </a>
+    {% endif %}
+
+</div>
+
+{% endblock %}

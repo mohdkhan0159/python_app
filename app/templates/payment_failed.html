@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Payment Failed ❌</h2>
+
+<p>Your card was declined or invalid. Please try again.</p>
+
+<a href="/payment/{{ course_id }}">Try Again</a>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+.course-header {
+    background: linear-gradient(135deg, #0a0a0a, #1f1f1f);
+    padding: 40px 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 25px rgba(0, 183, 255, 0.25);
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.course-header h1 {
+    color: #00d4ff;
+    margin-bottom: 10px;
+    font-size: 32px;
+}
+
+.course-container {
+    background: #121212;
+    padding: 20px;
+    border-radius: 12px;
+    color: #e0e0e0;
+    max-width: 850px;
+    margin: auto;
+    box-shadow: 0 0 20px rgba(0, 119, 255, 0.2);
+}
+
+.course-thumbnail {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 18px rgba(0, 183, 255, 0.3);
+}
+
+.buy-btn {
+    display: inline-block;
+    padding: 12px 25px;
+    background: #00aaff;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 18px;
+    margin-top: 20px;
+    transition: 0.25s ease;
+}
+
+.buy-btn:hover {
+    background: #0093dd;
+    box-shadow: 0 0 15px rgba(0, 183, 255, 0.5);
+}
+
+.lesson-list {
+    margin-top: 30px;
+    padding-left: 10px;
+}
+
+.lesson-item a {
+    color: #00d4ff;
+    text-decoration: none;
+}
+
+.lesson-item a:hover {
+    text-decoration: underline;
+}
+</style>
+
+<div class="course-header">
+    <h1>{{ course.title }}</h1>
+    <p>{{ course.description }}</p>
+</div>
+
+<div class="course-container">
+
+    <img class="course-thumbnail" src="/static/images/{{ course.thumbnail_path }}" alt="Course Image">
+
+    <h2 style="color:white;">Course Overview</h2>
+    <p>{{ course.description }}</p>
+
+    <br>
+    <h3 style="color:#00d4ff;">Price: ${{ "%.2f"|format(course.price_cents / 100) }}</h3>
+
+    <!-- ACCESS CONTROL BUTTON -->
+    {% if has_access %}
+        <a href="/lessons/{{ course.id }}" class="buy-btn" style="background:#4CAF50;">
+            Start Learning
+        </a>
+    {% else %}
+        <a href="/payment/{{ course.id }}" class="buy-btn">
+            Buy Now
+        </a>
+    {% endif %}
+
+    <!-- LESSON LIST (ONLY IF PAID) -->
+    {% if has_access %}
+        <div id="lessons" class="lesson-list">
+            <h2 style="color:white; margin-top:40px;">Lessons</h2>
+
+            <ul>
+            {% for lesson in lessons %}
+                <li class="lesson-item">
+                    <a href="/lesson/{{ lesson.id }}">
+                        ▶ {{ lesson.title }}
+                    </a>
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

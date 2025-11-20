@@ -1,0 +1,36 @@
+name: Build, Push to ACR, Deploy to AKS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ secrets.ACR_REGISTRY }}/learning-platform:latest
+
+  deploy-to-aks:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/aks-set-context@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          cluster-name: ${{ secrets.AKS_CLUSTER }}
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+      - name: Deploy to AKS
+        run: |
+          kubectl set image deployment/learning-platform web=${{ secrets.ACR_REGISTRY }}/learning-platform:latest || true
+          kubectl apply -f k8s/service.yaml || true

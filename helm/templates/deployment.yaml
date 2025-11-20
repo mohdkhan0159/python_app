@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lp.fullname" . }}
+  labels:
+    app: {{ include "lp.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "lp.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "lp.fullname" . }}
+    spec:
+      containers:
+        - name: learning-platform
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          env:
+            - name: ENV
+              value: "{{ .Values.env.ENV }}"
+            - name: AZURE_STORAGE_CONTAINER
+              value: "{{ .Values.env.AZURE_STORAGE_CONTAINER }}"
+            # Populate sensitive values from created k8s Secret
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lp.fullname" . }}-secrets
+                  key: SESSION_SECRET
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lp.fullname" . }}-secrets
+                  key: DATABASE_URL
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lp.fullname" . }}-secrets
+                  key: AZURE_STORAGE_CONNECTION_STRING
+            - name: AZURE_STORAGE_ACCOUNT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lp.fullname" . }}-secrets
+                  key: AZURE_STORAGE_ACCOUNT_NAME
+            - name: AZURE_STORAGE_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lp.fullname" . }}-secrets
+                  key: AZURE_STORAGE_ACCOUNT_KEY
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            {{- if .Values.livenessProbe.enabled }}
+            httpGet:
+              path: "{{ .Values.livenessProbe.path }}"
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            {{- end }}
+          readinessProbe:
+            {{- if .Values.readinessProbe.enabled }}
+            httpGet:
+              path: "{{ .Values.readinessProbe.path }}"
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            {{- end }}
+      securityContext: {{ toYaml .Values.podSecurityContext | nindent 6 }}

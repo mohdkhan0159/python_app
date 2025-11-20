@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>Learning Platform UI</title><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body>
+<h1>Learning Platform Demo UI</h1>
+<div>
+  <input id="email" placeholder="email"/>
+  <input id="password" placeholder="password" type="password"/>
+  <button id="register">Register</button>
+  <button id="login">Login</button>
+  <span id="status"></span>
+</div>
+<h2>Courses</h2>
+<div id="courses"></div>
+<script>
+const API = window.location.origin;
+let token = null;
+async function api(path, opts={}) {
+  opts.headers = opts.headers || {};
+  if (token) opts.headers['Authorization'] = 'Bearer '+token;
+  const res = await fetch(API+path, opts);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+async function loadCourses(){ try{ const cs=await api('/courses/'); const cdiv=document.getElementById('courses'); cdiv.innerHTML=''; cs.forEach(c=>{ const el=document.createElement('div'); el.style.border='1px solid #ddd'; el.style.padding='8px'; el.style.margin='8px'; el.innerHTML=`<img src="${c.thumbnail_path||'/static/thumbnails/course_1.svg'}" style="width:200px;height:120px"/><h4>${c.title}</h4><p>${c.description||''}</p><p>$${(c.price_cents/100).toFixed(2)}</p><button>Buy</button>`; el.querySelector('button').onclick=async()=>{ if(!token){alert('login first');return;} try{ const r=await api('/payments/simulate',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_email: document.getElementById('email').value, course_id: c.id})}); alert('Result: '+JSON.stringify(r)); }catch(e){alert('Err '+e.message);} }; cdiv.appendChild(el); }); }catch(e){document.getElementById('courses').innerText='Failed: '+e.message;} }
+document.getElementById('register').onclick=async()=>{ try{ await api('/users/register',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email:document.getElementById('email').value, password:document.getElementById('password').value})}); document.getElementById('status').innerText='Registered'; }catch(e){ document.getElementById('status').innerText='Reg error '+e.message;} };
+document.getElementById('login').onclick=async()=>{ try{ const t=await api('/users/login',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email:document.getElementById('email').value, password:document.getElementById('password').value})}); token=t.access_token; document.getElementById('status').innerText='Logged in'; await loadCourses(); }catch(e){ document.getElementById('status').innerText='Login err '+e.message;} };
+loadCourses();
+</script>
+</body>
+</html>

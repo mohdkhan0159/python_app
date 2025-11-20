@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{ course.title }} — Lessons</h1>
+
+<ul style="margin-top:20px;">
+    {% for lesson in lessons %}
+        <li style="margin-bottom:10px;">
+            <a href="/lesson/{{ lesson.id }}" style="color:#00aaff; font-size:18px;">
+                ▶ {{ lesson.title }}
+            </a>
+        </li>
+    {% endfor %}
+</ul>
+
+<hr>
+
+<a href="/course/{{ course.id }}" style="color:#ccc;">
+    ← Back to Course
+</a>
+
+{% endblock %}

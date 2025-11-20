@@ -1,0 +1,58 @@
+# Values for learning-platform Helm chart
+
+image:
+  repository: youracr.azurecr.io/learning-platform
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+ingress:
+  enabled: false
+  host: example.com
+  annotations: {}
+  tls: [] # - hosts: [example.com]; secretName: example-tls
+
+env:
+  # Non-sensitive environment variables
+  ENV: production
+  AZURE_STORAGE_CONTAINER: courses
+
+# Sensitive values are expected to be provided through:
+# - Kubernetes Secret (created by pipeline using Key Vault), or
+# - Azure AD pod identity or CSI provider — adapt as needed.
+secrets:
+  # This maps to the k8s Secret keys created by pipeline or manually
+  SESSION_SECRET: ""
+  DATABASE_URL: ""              # e.g. mssql+pytds://...
+  AZURE_STORAGE_CONNECTION_STRING: ""
+  AZURE_STORAGE_ACCOUNT_NAME: ""
+  AZURE_STORAGE_ACCOUNT_KEY: ""
+
+podSecurityContext: {}
+containerSecurityContext: {}
+
+livenessProbe:
+  enabled: true
+  path: /health
+  initialDelaySeconds: 30
+  periodSeconds: 20
+
+readinessProbe:
+  enabled: true
+  path: /health
+  initialDelaySeconds: 5
+  periodSeconds: 10

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{ lesson.title }}</h1>
+
+{% if lesson.video_url %}
+    <iframe width="800" height="450"
+            src="https://www.youtube.com/embed/{{ lesson.video_url }}"
+            frameborder="0"
+            allowfullscreen>
+    </iframe>
+{% else %}
+    <p>No video for this lesson.</p>
+{% endif %}
+
+<p style="margin-top:20px;">
+    {{ lesson.content }}
+</p>
+
+<a href="/lessons/{{ course.id }}">← Back to lessons</a>
+
+{% endblock %}

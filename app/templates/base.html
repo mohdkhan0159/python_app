@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title if title else "Learning Platform" }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<style>
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 25px;
+    background: #0f0f0f;
+    border-bottom: 1px solid #1e1e1e;
+}
+
+.navbar a {
+    color: #00d4ff;
+    margin-right: 20px;
+    text-decoration: none;
+    font-size: 18px;
+}
+
+.profile-menu {
+    position: relative;
+}
+
+.profile-btn {
+    cursor: pointer;
+    padding: 10px 15px;
+    background: #00aaff;
+    color: white;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.profile-dropdown {
+    position: absolute;
+    right: 0;
+    top: 50px;
+    width: 220px;
+    background: #111;
+    padding: 15px;
+    border-radius: 10px;
+    display: none;
+    box-shadow: 0 0 15px rgba(0, 183, 255, 0.25);
+}
+
+.profile-dropdown a {
+    display: block;
+    padding: 8px 0;
+    color: #00d4ff;
+    text-decoration: none;
+}
+</style>
+
+<div class="navbar">
+    <div>
+        <a href="/" style="color:#00d4ff; font-size:22px; text-decoration:none;">
+            Learning Platform
+        </a>
+
+        <!-- Uncomment if you want these back -->
+        <!--
+        <a href="/">Home</a>
+        <a href="/courses">Courses</a>
+        -->
+    </div>
+
+    {% if request.state.user %}
+    <div class="profile-menu">
+        <div class="profile-btn" onclick="toggleProfile()">
+            {{ request.state.user.email }}
+        </div>
+
+        <div id="profileDropdown" class="profile-dropdown">
+            <strong style="color:white;">My Profile</strong>
+            <hr style="border-color:#222;">
+            <a href="/dashboard">My Courses</a>
+            <a href="/profile">View Profile</a>
+            <a href="/users/logout" style="color:#ff6666;">Logout</a>
+        </div>
+    </div>
+    {% else %}
+        <a href="/login" class="profile-btn">Login</a>
+    {% endif %}
+</div>
+
+<script>
+function toggleProfile() {
+    let menu = document.getElementById("profileDropdown");
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+window.onclick = function(event) {
+    if (!event.target.closest(".profile-menu")) {
+        let menu = document.getElementById("profileDropdown");
+        if (menu) menu.style.display = "none";
+    }
+};
+</script>
+
+<div style="padding: 20px;">
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>
