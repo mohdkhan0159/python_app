@@ -26,16 +26,24 @@ stages:
         - task: AzureCLI@2
           displayName: Login to ACR
           inputs:
-            azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
-            scriptType: bash
-            scriptLocation: inlineScript
-            inlineScript: |
-              az acr login --name $(ACR_NAME)
+            azureSubscription: 'azure-cloud'
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: 'az acr login --name $(ACR_NAME)'
 
-        - script: |
-            docker build -t $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(IMAGE_TAG) .
-            docker push $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(IMAGE_TAG)
+        # - script: |
+        #     docker build -t $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(IMAGE_TAG) .
+        #     docker push $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(IMAGE_TAG)
+        #   displayName: Build and Push Image
+
+        - task: Docker@2
           displayName: Build and Push Image
+          inputs:
+            command: 'buildAndPush'
+            Dockerfile: '**/Dockerfile'
+            tags: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(IMAGE_TAG)'
+            addPipelineData: false
+            addBaseImageData: false
 
 
 # =====================================================
@@ -61,15 +69,15 @@ stages:
               - task: AzureCLI@2
                 displayName: Get AKS credentials
                 inputs:
-                  azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
-                  scriptType: bash
-                  scriptLocation: inlineScript
+                  azureSubscription: 'azure-cloud'
+                  scriptType: 'bash'
+                  scriptLocation: 'inlineScript'
                   inlineScript: |
                     az aks get-credentials \
                       --resource-group $(AKS_RESOURCE_GROUP) \
                       --name $(AKS_CLUSTER_NAME) \
                       --overwrite-existing
-
+                    
                     # Ensure namespace exists
                     kubectl get namespace $(K8S_NAMESPACE) || \
                       kubectl create namespace $(K8S_NAMESPACE)
@@ -91,8 +99,7 @@ stages:
                       AZURE_STORAGE_ACCOUNT_NAME: "$(AZURE_STORAGE_ACCOUNT_NAME)"
                       AZURE_STORAGE_ACCOUNT_KEY: "$(AZURE_STORAGE_ACCOUNT_KEY)"
                     EOF
-
-
+              
               # --------------------------
               # 3. Install Helm
               # --------------------------
@@ -100,7 +107,27 @@ stages:
                 displayName: Install Helm
                 inputs:
                   helmVersionToInstall: latest
-
+              
+              # --------------------------
+              # 3. Install kubectl
+              # --------------------------
+              - task: KubectlInstaller@0
+                inputs:
+                  kubectlVersion: 'latest'
+                  
+              # --------------------------
+              # 3. create namespace
+              # --------------------------
+              - task: Kubernetes@1
+                inputs:
+                  connectionType: 'Azure Resource Manager'
+                  azureSubscriptionEndpoint: 'azure-cloud'
+                  azureResourceGroup: 'azurecloud'
+                  kubernetesCluster: 'aks-azurecloud'
+                  command: 'apply'
+                  arguments: '-f **/k8s/namespace.yaml'
+                  secretType: 'dockerRegistry'
+                  containerRegistryType: 'Azure Container Registry'
 
               # --------------------------
               # 4. Deploy with Helm
@@ -108,16 +135,13 @@ stages:
               - task: HelmDeploy@0
                 displayName: Deploy Helm Chart
                 inputs:
-                  connectionType: Kubernetes Service Connection
-                  kubernetesServiceConnection: "$(K8S_SERVICE_CONNECTION)"
-                  namespace: "$(K8S_NAMESPACE)"        # <--- NOW using your namespace variable
-                  command: upgrade
-                  chartType: FilePath
-                  chartPath: "$(HELM_CHART_PATH)"
-                  releaseName: "$(HELM_RELEASE_NAME)"
-                  valueFile: "values.secrets.yaml"
-                  install: true
-                  waitForExecution: true
-                  set: |
-                    image.repository=$(ACR_LOGIN_SERVER)/$(IMAGE_NAME)
-                    image.tag=$(IMAGE_TAG)
+                  connectionType: 'Azure Resource Manager'
+                  azureSubscription: 'azure-cloud'
+                  azureResourceGroup: 'azurecloud'
+                  kubernetesCluster: 'aks-azurecloud'
+                  namespace: '$(K8S_NAMESPACE)'
+                  command: 'upgrade'
+                  chartType: 'FilePath'
+                  chartPath: '$(HELM_CHART_PATH)'
+                  releaseName: '$(HELM_RELEASE_NAME)'
+                  valueFile: 'values.secrets.yaml'
