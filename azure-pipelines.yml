@@ -5,8 +5,7 @@
 trigger:
   branches:
     include:
-      - main
-      - develop
+      - master
   paths:
     exclude:
       - README.md
@@ -16,7 +15,7 @@ trigger:
 pr:
   branches:
     include:
-      - main
+      - master
 
 variables:
   - group: learning_platform_vg
@@ -60,7 +59,8 @@ stages:
   - stage: Deploy
     displayName: 'Deploy to AKS'
     dependsOn: Build
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: succeeded()
+    # condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     
     jobs:
       - deployment: DeployToAKS
@@ -126,16 +126,19 @@ stages:
                   displayName: 'Deployment Summary'
 
   # ============================================
-  # Stage 3: Run Database Migrations (Optional)
+  # Stage 3: Run Database Migrations with Alembic
   # ============================================
   - stage: Migrations
     displayName: 'Run Database Migrations'
     dependsOn: Deploy
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: succeeded()
+    # condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     
     jobs:
       - job: RunMigrations
-        displayName: 'Execute Database Migrations'
+        displayName: 'Execute Alembic Migrations'
+        pool:
+          vmImage: 'ubuntu-latest'
         
         steps:
           - task: AzureCLI@2
@@ -151,22 +154,44 @@ stages:
                   --overwrite-existing
           
           - script: |
+              echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+              echo "🔄 Running Alembic Database Migrations"
+              echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+              
               # Get pod name
               POD_NAME=$(kubectl get pods -n $(namespace) -l app=learning-platform -o jsonpath='{.items[0].metadata.name}')
-              echo "Running migrations on pod: $POD_NAME"
               
-              # Check if migration files exist
-              if [ -f "migrate_user_names.py" ]; then
-                echo "Copying migration scripts to pod..."
-                kubectl cp migrate_user_names.py $(namespace)/$POD_NAME:/app/ || true
-                kubectl cp migrate_created_at.py $(namespace)/$POD_NAME:/app/ || true
-                
-                echo "Migrations copied (if they exist)"
-              else
-                echo "No migration files found, skipping..."
+              if [ -z "$POD_NAME" ]; then
+                echo "❌ Error: No pods found"
+                exit 1
               fi
-            displayName: 'Copy and Run Migrations'
-            continueOnError: true
+              
+              echo "📦 Pod: $POD_NAME"
+              
+              # Wait for pod to be ready
+              echo "⏳ Waiting for pod..."
+              kubectl wait --for=condition=ready pod/$POD_NAME -n $(namespace) --timeout=60s
+              
+              # Check current version
+              echo ""
+              echo "📋 Current Migration Status:"
+              kubectl exec -n $(namespace) $POD_NAME -- python -m alembic current || echo "⚠️  No migrations yet"
+              
+              # Run migrations
+              echo ""
+              echo "🚀 Applying Migrations..."
+              kubectl exec -n $(namespace) $POD_NAME -- python -m alembic upgrade head
+              
+              if [ $? -eq 0 ]; then
+                echo ""
+                echo "✅ Migrations Applied Successfully!"
+                kubectl exec -n $(namespace) $POD_NAME -- python -m alembic current
+              else
+                echo "❌ Migration Failed!"
+                exit 1
+              fi
+            displayName: 'Run Alembic Migrations'
+            continueOnError: false
 
   # # ============================================
   # # Stage 4: Smoke Tests
