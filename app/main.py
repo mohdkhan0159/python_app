@@ -87,9 +87,9 @@ async def attach_user(request: Request, call_next):
 # -------------------------------------------------------
 
 app.include_router(users.router)
-app.include_router(courses.router)
+app.include_router(ui.router)  # UI routes first (HTML pages)
+app.include_router(courses.router)  # API routes second
 app.include_router(payments.router)
-app.include_router(ui.router)
 app.include_router(course_detail.router)
 app.include_router(payment.router)
 app.include_router(dashboard.router)
@@ -134,5 +134,6 @@ async def home(request: Request):
     )
 
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
+
 # Static Files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

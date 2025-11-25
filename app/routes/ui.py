@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from ..database import AsyncSessionLocal, get_db
 from ..models import Course, Purchase, Lesson
 from ..auth import get_current_user
@@ -49,18 +50,29 @@ async def dashboard(
     if not current_user:
         return RedirectResponse("/login?next=/dashboard", status_code=303)
 
+    # Fetch user's purchased courses with lessons
     result = await db.execute(
-        select(Course)
-        .join(Purchase)
-        .where(Purchase.user_id == current_user.id, Purchase.paid == True)
+        select(Purchase)
+        .options(selectinload(Purchase.course).selectinload(Course.lessons))
+        .where(Purchase.user_id == current_user.id)
     )
-
-    courses = result.scalars().all()
-
+    purchased_courses = result.scalars().all()
+    
+    # Calculate stats
+    total_lessons = sum(len(p.course.lessons) for p in purchased_courses)
+    completed_lessons = 0  # TODO: Track lesson completion
+    
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "courses": courses, "user": current_user}
+        {
+            "request": request,
+            "user": current_user,
+            "purchased_courses": purchased_courses,
+            "total_lessons": total_lessons,
+            "completed_lessons": completed_lessons
+        }
     )
+
 
 @router.get("/lesson/{lesson_id}", response_class=HTMLResponse)
 async def lesson_detail(request: Request, lesson_id: int, db: AsyncSession = Depends(get_db)):
@@ -77,6 +89,7 @@ async def lesson_detail(request: Request, lesson_id: int, db: AsyncSession = Dep
         {"request": request, "lesson": lesson}
     )
 
+
 @router.get("/")
 async def home(request: Request, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Course).where(Course.is_published == True))
@@ -86,6 +99,7 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
         "index.html",
         {"request": request, "courses": courses}
     )
+
 
 @router.get("/course/{course_id}", response_class=HTMLResponse)
 async def course_detail(
@@ -116,6 +130,7 @@ async def course_detail(
         "course_detail.html",
         {"request": request, "course": course, "has_access": has_access}
     )
+
 
 @router.get("/profile", response_class=HTMLResponse)
 async def user_profile(

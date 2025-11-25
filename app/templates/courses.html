@@ -2,32 +2,140 @@
 
 {% block content %}
 
-<div class="course-header">
-    <h1>{{ course.title }}</h1>
-    <p>{{ course.description }}</p>
-</div>
+<style>
+    .courses-page-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 20px;
+    }
 
-<div class="course-container">
+    .courses-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
 
-    <img class="course-thumbnail" src="/static/images/{{ course.thumbnail_path }}" alt="Course Image">
+    .courses-header h1 {
+        color: #00d4ff;
+        font-size: 42px;
+        margin-bottom: 10px;
+    }
 
-    <h2 style="color:white;">About This Course</h2>
-    <p>{{ course.description }}</p>
+    .courses-header p {
+        color: #999;
+        font-size: 18px;
+    }
 
-    <h3 style="color:#00d4ff; margin-top:20px;">
-        Price: ${{ "%.2f" | format(course.price_cents / 100) }}
-    </h3>
+    .courses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+    }
 
-    {% if has_access %}
-        <a href="/lessons/{{ course.id }}" class="buy-btn" style="background:#4CAF50;">
-            Start Learning →
-        </a>
+    .course-card {
+        background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #333;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .course-card:hover {
+        border-color: #00d4ff;
+        box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
+        transform: translateY(-8px);
+    }
+
+    .course-thumbnail {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        background: #0a0a0a;
+    }
+
+    .course-info {
+        padding: 20px;
+    }
+
+    .course-title {
+        color: #fff;
+        font-size: 22px;
+        font-weight: bold;
+        margin: 0 0 10px 0;
+    }
+
+    .course-description {
+        color: #999;
+        font-size: 14px;
+        margin: 0 0 15px 0;
+        line-height: 1.6;
+    }
+
+    .course-price {
+        color: #00ff88;
+        font-size: 24px;
+        font-weight: bold;
+        margin: 15px 0;
+    }
+
+    .view-course-btn {
+        display: inline-block;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #00aaff, #0077cc);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .view-course-btn:hover {
+        background: linear-gradient(135deg, #0093dd, #005fa3);
+        box-shadow: 0 0 20px rgba(0, 183, 255, 0.5);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: #666;
+    }
+
+    .empty-state-icon {
+        font-size: 72px;
+        margin-bottom: 20px;
+    }
+
+    .empty-state-text {
+        font-size: 20px;
+    }
+</style>
+
+<div class="courses-page-container">
+    <div class="courses-header">
+        <h1>Browse All Courses</h1>
+        <p>Explore our collection of courses and start learning today</p>
+    </div>
+
+    {% if courses %}
+    <div class="courses-grid">
+        {% for course in courses %}
+        <div class="course-card" onclick="window.location.href='/course/{{ course.id }}'">
+            <img src="{{ course.thumbnail_path }}" alt="{{ course.title }}" class="course-thumbnail">
+            <div class="course-info">
+                <h3 class="course-title">{{ course.title }}</h3>
+                <p class="course-description">{{ course.description[:120] }}...</p>
+                <div class="course-price">${{ "%.2f" | format(course.price_cents / 100) }}</div>
+                <a href="/course/{{ course.id }}" class="view-course-btn">View Course →</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
     {% else %}
-        <a href="/payment/{{ course.id }}" class="buy-btn">
-            Buy Now →
-        </a>
+    <div class="empty-state">
+        <div class="empty-state-icon">📚</div>
+        <div class="empty-state-text">No courses available at the moment</div>
+    </div>
     {% endif %}
-
 </div>
 
 {% endblock %}

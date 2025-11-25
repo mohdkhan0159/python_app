@@ -3,10 +3,8 @@ kind: Deployment
 metadata:
   name: learning-platform
   namespace: learning-platform
-  labels:
-        app: learning-platform
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: learning-platform
@@ -14,58 +12,72 @@ spec:
     metadata:
       labels:
         app: learning-platform
+        azure.workload.identity/use: "true"  # Enable Workload Identity for this pod
     spec:
+      serviceAccountName: learning-platform-sa
       securityContext:
-        fsGroup: 2000
+        runAsNonRoot: false
+        runAsUser: 0
+      containers:
+        - name: learning-platform
+          image: useastacr.azurecr.io/learning-platform:profile-edit
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          # Mount the secrets-store CSI provider files
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /mnt/secrets
+              readOnly: true
+          env:
+            # Provide an override or simple values you still want as env
+            - name: ENV
+              value: "production"
 
-      # Attach Managed Identity
-      nodeSelector:
-        kubernetes.io/os: linux
+            # Optional: if you want a fallback to DATABASE_URL env:
+            # - name: DATABASE_URL
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: db-secret
+            #       key: connectionstring
 
-      # CSI + Pod Identity
+          # Readiness probe - checks if app is ready to serve traffic
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: 8000
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 10
+          #   timeoutSeconds: 5
+          #   failureThreshold: 3
+
+          # # Liveness probe - checks if app is still alive
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: 8000
+          #   initialDelaySeconds: 30
+          #   periodSeconds: 15
+          #   timeoutSeconds: 5
+          #   failureThreshold: 3
+
+          # # Resource requests and limits
+          # resources:
+          #   requests:
+          #     memory: "512Mi"
+          #     cpu: "250m"
+          #   limits:
+          #     memory: "1Gi"
+          #     cpu: "500m"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+
       volumes:
         - name: secrets-store
           csi:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
-              secretProviderClass: lp-secret-provider
-
-      containers:
-        - name: api
-          image: useastacr.azurecr.io/learning-platform:latest
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8000
-          env:
-            - name: ENV
-              value: "production"
-
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: lp-secrets
-                  key: AZURE_SQL_CONNECTION_STRING
-
-            - name: AZURE_SQL_CONNECTION_STRING
-              valueFrom:
-                secretKeyRef:
-                  name: lp-secrets
-                  key: AZURE_SQL_CONNECTION_STRING
-
-            - name: AZURE_STORAGE_CONNECTION_STRING
-              valueFrom:
-                secretKeyRef:
-                  name: lp-secrets
-                  key: AZURE_STORAGE_CONNECTION_STRING
-
-            - name: SESSION_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: lp-secrets
-                  key: SESSION_SECRET
-
-          volumeMounts:
-          - name: secrets-store
-            mountPath: "/mnt/secrets"
-            readOnly: true
+              secretProviderClass: "azure-kv"

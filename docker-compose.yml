@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: learning-platform-local
+    ports:
+      - "8000:8000"
+    environment:
+      # Local development environment
+      - ENV=local
+      - SESSION_SECRET=local-dev-secret-change-in-production
+      - DATABASE_URL=sqlite+aiosqlite:///./learning_platform.db
+      # Azure settings (not used in local, but prevents errors)
+      - AZURE_SQL_CONNECTION_STRING=
+      - AZURE_STORAGE_CONNECTION_STRING=
+      - AZURE_STORAGE_CONTAINER=uploads
+    volumes:
+      # Persist database
+      - ./data:/app/data
+      # Persist uploaded files
+      - ./uploads:/app/uploads
+      # Optional: Mount code for development (comment out for production-like testing)
+      # - ./app:/app/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

@@ -16,6 +16,7 @@ def build_azure_sql_url():
     """
 
     raw = settings.AZURE_SQL_CONNECTION_STRING
+    print(f"DEBUG: Raw connection string: '{raw}'")
     if not raw:
         return None
 
@@ -24,26 +25,34 @@ def build_azure_sql_url():
     # OR user may provide SQLAlchemy-style URL.
 
     if raw.startswith("mssql"):
+        print("DEBUG: Raw string starts with mssql, returning as is.")
         # User already provided a SQLAlchemy URL
         return raw
 
-    # Otherwise, convert Key Vault–style connection strings
+    # Parse connection string into components
+    # Handle both semicolon and ampersand separators
     parts = dict(
         item.split("=", 1)
         for item in raw.replace(";", "&").split("&")
         if "=" in item
     )
 
+    # Extract connection parameters
     server = parts.get("Server") or parts.get("server")
-    database = parts.get("Database") or parts.get("database")
+    database = parts.get("Database") or parts.get("database") or parts.get("Initial Catalog")
     user = parts.get("User ID") or parts.get("uid") or parts.get("user")
     password = parts.get("Password") or parts.get("pwd")
 
-    if not (server and database and user and password):
-        raise ValueError("Invalid Azure SQL connection string format.")
+    # Clean up server (remove tcp: prefix and port if present)
+    if server:
+        server = server.replace("tcp:", "").split(",")[0]
 
-    # remove 'tcp:' prefix
-    server = server.replace("tcp:", "")
+    print(f"DEBUG: Parsed - Server: {server}, Database: {database}, User: {user}, Password: {'***' if password else None}")
+
+    if not (server and database and user and password):
+        print("DEBUG: Missing required SQL auth parameters, falling back to odbc_connect")
+        params = urllib.parse.quote_plus(raw)
+        return f"mssql+aioodbc:///?odbc_connect={params}"
 
     # SQLAlchemy async driver (aioodbc)
     password_enc = urllib.parse.quote_plus(password)
@@ -54,7 +63,7 @@ def build_azure_sql_url():
         "&Encrypt=yes"
         "&TrustServerCertificate=no"
     )
-
+    print(f"DEBUG: Constructed User/Pass URL: {url}")
     return url
 
 
@@ -64,6 +73,7 @@ def build_azure_sql_url():
 if settings.ENV in ("production", "prod") and settings.AZURE_SQL_CONNECTION_STRING:
     print("Using Azure SQL")
     DATABASE_URL = build_azure_sql_url()
+    print(f"DEBUG: Final DATABASE_URL: {DATABASE_URL}")
 else:
     print("Using local SQLite")
     DATABASE_URL = settings.DATABASE_URL

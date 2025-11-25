@@ -1,25 +1,66 @@
+# app/settings.py
 from pydantic_settings import BaseSettings
+from pydantic import Field
+from typing import Optional
 
 class Settings(BaseSettings):
-    # --- CORE CONFIG ---
-    SESSION_SECRET: str = "super-secret-local-key-123456789"
-    ENV: str = "local"  
-
-    # --- DATABASE CONFIG (SQLite locally, Azure SQL in cloud) ---
-    DATABASE_URL: str = "sqlite+aiosqlite:///./learning_platform.db"
-    AZURE_SQL_CONNECTION_STRING: str | None = None   # <-- FIXED
-
-    # --- AZURE STORAGE ---
-    AZURE_STORAGE_CONNECTION_STRING: str | None = None
-    AZURE_STORAGE_ACCOUNT_NAME: str | None = None
-    AZURE_STORAGE_ACCOUNT_KEY: str | None = None
-    AZURE_STORAGE_CONTAINER: str | None = None
-    AZURE_BLOB_CONTAINER: str | None = None
-
-    # --- KEY VAULT ---
-    KEY_VAULT_URL: str | None = None
-
+    """
+    Application settings that work in both local and Azure environments.
+    
+    Local (ENV=local):
+    - Reads from .env file
+    - Uses SQLite database
+    - Uses local file storage
+    
+    Azure (ENV=production):
+    - Reads from /mnt/secrets (Key Vault via CSI driver)
+    - Uses Azure SQL database
+    - Uses Azure Blob Storage
+    """
+    
+    # ==========================================
+    # ENVIRONMENT
+    # ==========================================
+    ENV: str = Field("local", env="ENV")
+    
+    # ==========================================
+    # SESSION SECRET
+    # ==========================================
+    SESSION_SECRET: str = Field(
+        "dev-secret-change-in-production-12345678901234567890",
+        env="SESSION_SECRET"
+    )
+    
+    # ==========================================
+    # DATABASE
+    # ==========================================
+    # Local SQLite (default for development)
+    DATABASE_URL: str = Field(
+        "sqlite+aiosqlite:///./learning_platform.db",
+        env="DATABASE_URL"
+    )
+    
+    # Azure SQL (used when ENV=production)
+    AZURE_SQL_CONNECTION_STRING: Optional[str] = Field(None, env="AZURE_SQL_CONNECTION_STRING")
+    
+    # ==========================================
+    # AZURE STORAGE
+    # ==========================================
+    AZURE_STORAGE_CONNECTION_STRING: Optional[str] = Field(None, env="AZURE_STORAGE_CONNECTION_STRING")
+    AZURE_STORAGE_ACCOUNT_NAME: Optional[str] = Field(None, env="AZURE_STORAGE_ACCOUNT_NAME")
+    AZURE_STORAGE_ACCOUNT_KEY: Optional[str] = Field(None, env="AZURE_STORAGE_ACCOUNT_KEY")
+    AZURE_STORAGE_CONTAINER: Optional[str] = Field("uploads", env="AZURE_STORAGE_CONTAINER")
+    
     class Config:
+        # Load from .env file in local development
         env_file = ".env"
+        # Load from /mnt/secrets in Kubernetes (Key Vault CSI driver)
+        secrets_dir = "/mnt/secrets"
 
-settings = Settings()
+# Initialize settings
+try:
+    settings = Settings()
+except Exception as e:
+    import sys
+    print(f"FATAL: Settings load failed: {e}", file=sys.stderr)
+    raise e
