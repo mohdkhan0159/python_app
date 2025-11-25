@@ -34,15 +34,18 @@ stages:
         displayName: 'Build Docker Image'
         
         steps:
-
+          # - task: Docker@2
+          #   inputs:
+          #     containerRegistry: 'acr-svc'
+          #     command: 'login'
           - task: Docker@2
             displayName: 'Build Docker Image'
             inputs:
-              command: 'buildAndPush'
+              containerRegistry: 'acr-svc'
               repository: '$(imageName)'
+              command: 'buildAndPush'
               Dockerfile: '$(dockerfilePath)'
               tags: '$(imageTag)'
-              arguments: '--no-cache'
           
           - script: |
               echo "Image built and pushed successfully!"
