@@ -147,6 +147,6 @@ async def home(request: Request):
         "index.html",
         {"request": request}
     )
-
+app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
 # Static Files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
