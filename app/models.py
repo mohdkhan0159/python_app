@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from datetime import datetime
 
 # USE Base from database.py — DO NOT REDECLARE
 from .database import Base
@@ -11,8 +12,11 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(256), unique=True, index=True, nullable=False)
+    first_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=True)
     hashed_password = Column(String(256), nullable=False)
     is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=datetime.utcnow)
 
     purchases = relationship('Purchase', back_populates='user')
 

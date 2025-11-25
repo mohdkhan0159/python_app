@@ -1,25 +1,47 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+import os
+import sys
 
-from app.models import Base   # <-- Your models Base
-from app.config import settings  # <-- load DATABASE_URL from settings.py
+# Add parent directory to path to import app modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+# Import your models and settings
+from app.models import Base
+from app.settings import settings
 
-# --- Alembic Config ---
+# Alembic Config object
 config = context.config
-sync_url = settings.DATABASE_URL.replace("+aiosqlite", "")
 
-config.set_main_option("sqlalchemy.url", sync_url)
+# Get database URL from settings
+# Convert async URL to sync for Alembic
+database_url = settings.AZURE_SQL_CONNECTION_STRING
+if database_url:
+    # Remove async driver prefix if present
+    if '+aioodbc' in database_url:
+        database_url = database_url.replace('+aioodbc', '+pyodbc')
+    elif '+aiosqlite' in database_url:
+        database_url = database_url.replace('+aiosqlite', '')
+    
+    config.set_main_option('sqlalchemy.url', database_url)
 
 # Interpret the config file for logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Set target metadata for autogenerate support
 target_metadata = Base.metadata
 
 
 def run_migrations_offline():
+    """Run migrations in 'offline' mode.
+    
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well. By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+    """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -33,6 +55,11 @@ def run_migrations_offline():
 
 
 def run_migrations_online():
+    """Run migrations in 'online' mode.
+    
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+    """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
