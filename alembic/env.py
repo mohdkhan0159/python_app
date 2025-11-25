@@ -52,6 +52,8 @@ else:
         database_url = database_url.replace('+aiosqlite', '')
 
 if database_url:
+    # Escape % signs for ConfigParser (alembic.ini uses % for interpolation)
+    database_url = database_url.replace('%', '%%')
     config.set_main_option('sqlalchemy.url', database_url)
 
 # Interpret the config file for logging
