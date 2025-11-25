@@ -15,15 +15,43 @@ from app.settings import settings
 config = context.config
 
 # Get database URL from settings
-# Convert async URL to sync for Alembic
-database_url = settings.AZURE_SQL_CONNECTION_STRING
-if database_url:
-    # Remove async driver prefix if present
-    if '+aioodbc' in database_url:
-        database_url = database_url.replace('+aioodbc', '+pyodbc')
-    elif '+aiosqlite' in database_url:
-        database_url = database_url.replace('+aiosqlite', '')
+# Convert ODBC connection string to SQLAlchemy URL format
+database_url = None
+
+# Check if we're in production (Azure) or local
+if settings.ENV == "production" and settings.AZURE_SQL_CONNECTION_STRING:
+    # Azure SQL - convert ODBC format to SQLAlchemy URL
+    odbc_string = settings.AZURE_SQL_CONNECTION_STRING
     
+    # Parse ODBC connection string
+    # Format: Server=tcp:server.database.windows.net,1433;Database=dbname;User ID=user;Password=pass;...
+    import urllib.parse
+    
+    # Extract components from ODBC string
+    parts = {}
+    for part in odbc_string.split(';'):
+        if '=' in part:
+            key, value = part.split('=', 1)
+            parts[key.strip()] = value.strip()
+    
+    # Build SQLAlchemy URL
+    server = parts.get('Server', '').replace('tcp:', '').replace(',1433', '')
+    database = parts.get('Database', '')
+    username = parts.get('User ID', '')
+    password = parts.get('Password', '')
+    
+    # URL encode the password
+    password_encoded = urllib.parse.quote_plus(password)
+    
+    # Create SQLAlchemy URL with pyodbc driver
+    database_url = f"mssql+pyodbc://{username}:{password_encoded}@{server}/{database}?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=no"
+else:
+    # Local SQLite - convert async to sync
+    database_url = settings.DATABASE_URL
+    if '+aiosqlite' in database_url:
+        database_url = database_url.replace('+aiosqlite', '')
+
+if database_url:
     config.set_main_option('sqlalchemy.url', database_url)
 
 # Interpret the config file for logging
