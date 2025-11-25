@@ -114,11 +114,26 @@ async def on_startup():
         existing = result.scalars().all()
 
         if not existing:
-            sample_courses = [
-                Course(title="Python for Beginners", description="Learn Python basics.", thumbnail_path="python.png"),
-                Course(title="Advanced Python", description="Master advanced Python techniques.", thumbnail_path="advanced_python.png"),
-                Course(title="FastAPI Bootcamp", description="Build APIs with FastAPI.", thumbnail_path="fastapi.png"),
-            ]
+            # Build thumbnail URLs based on environment
+            if settings.ENV == "production" and settings.AZURE_STORAGE_ACCOUNT_NAME:
+                # Production: Use Azure Blob Storage URLs
+                storage_account = settings.AZURE_STORAGE_ACCOUNT_NAME
+                container = settings.AZURE_STORAGE_CONTAINER or "uploads"
+                base_url = f"https://{storage_account}.blob.core.windows.net/{container}"
+                
+                sample_courses = [
+                    Course(title="Python for Beginners", description="Learn Python basics.", thumbnail_path=f"{base_url}/python.png"),
+                    Course(title="Advanced Python", description="Master advanced Python techniques.", thumbnail_path=f"{base_url}/advanced_python.png"),
+                    Course(title="FastAPI Bootcamp", description="Build APIs with FastAPI.", thumbnail_path=f"{base_url}/fastapi.png"),
+                ]
+            else:
+                # Local: Use relative paths
+                sample_courses = [
+                    Course(title="Python for Beginners", description="Learn Python basics.", thumbnail_path="/uploads/python.png"),
+                    Course(title="Advanced Python", description="Master advanced Python techniques.", thumbnail_path="/uploads/advanced_python.png"),
+                    Course(title="FastAPI Bootcamp", description="Build APIs with FastAPI.", thumbnail_path="/uploads/fastapi.png"),
+                ]
+            
             session.add_all(sample_courses)
             await session.commit()
 
@@ -132,8 +147,6 @@ async def home(request: Request):
         "index.html",
         {"request": request}
     )
-
-app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
 
 # Static Files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
