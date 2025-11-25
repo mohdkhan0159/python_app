@@ -1,0 +1,74 @@
+# Ignore unnecessary files to reduce build context
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Kubernetes
+k8s/
+
+# Migration scripts (not needed in container)
+migrate_*.py
+
+# Local development files
+.env
+.env.local
+*.db
+*.sqlite
+
+# Thumbnails (uploaded separately to Azure Blob)
+thumbnails/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
