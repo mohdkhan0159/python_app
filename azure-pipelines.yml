@@ -21,6 +21,9 @@ pr:
 variables:
   - group: learning_platform_vg
 
+pool:
+    vmImage: 'ubuntu-latest'
+
 stages:
   # ============================================
   # Stage 1: Build and Push Docker Image
@@ -30,40 +33,21 @@ stages:
     jobs:
       - job: BuildJob
         displayName: 'Build Docker Image'
-        pool:
-          vmImage: 'ubuntu-latest'
         
         steps:
           - task: Docker@2
             displayName: 'Login to ACR'
             inputs:
-              command: login
               containerRegistry: '$(acrName)'
-          
+              command: 'login'
           - task: Docker@2
             displayName: 'Build Docker Image'
             inputs:
-              command: build
+              command: 'buildAndPush'
               repository: '$(imageName)'
-              dockerfile: '$(dockerfilePath)'
-              tags: |
-                $(imageTag)
-                latest
-              arguments: '--no-cache'
-          
-          - task: Docker@2
-            displayName: 'Push Image with Build ID'
-            inputs:
-              command: push
-              repository: '$(imageName)'
+              Dockerfile: '$(dockerfilePath)'
               tags: '$(imageTag)'
-          
-          - task: Docker@2
-            displayName: 'Push Image as Latest'
-            inputs:
-              command: push
-              repository: '$(imageName)'
-              tags: 'latest'
+              arguments: '--no-cache'
           
           - script: |
               echo "Image built and pushed successfully!"
@@ -81,10 +65,7 @@ stages:
     jobs:
       - deployment: DeployToAKS
         displayName: 'Deploy to Kubernetes'
-        pool:
-          vmImage: 'ubuntu-latest'
-        environment: 'production'
-        
+        environment: 'production'        
         strategy:
           runOnce:
             deploy:
@@ -107,15 +88,14 @@ stages:
                   displayName: 'Deploy Namespace'
                   inputs:
                     action: 'deploy'
-                    kubernetesServiceConnection: 'AKS-Service-Connection'
-                    namespace: '$(namespace)'
+                    kubernetesServiceConnection: '$(azureSubscription)'
                     manifests: '$(k8sManifestsPath)/namespace.yaml'
                 
                 - task: KubernetesManifest@0
                   displayName: 'Deploy Service Account'
                   inputs:
                     action: 'deploy'
-                    kubernetesServiceConnection: 'AKS-Service-Connection'
+                    kubernetesServiceConnection: '$(azureSubscription)'
                     namespace: '$(namespace)'
                     manifests: '$(k8sManifestsPath)/serviceaccount.yaml'
                 
@@ -123,7 +103,7 @@ stages:
                   displayName: 'Deploy Secret Provider Class'
                   inputs:
                     action: 'deploy'
-                    kubernetesServiceConnection: 'AKS-Service-Connection'
+                    kubernetesServiceConnection: '$(azureSubscription)'
                     namespace: '$(namespace)'
                     manifests: '$(k8sManifestsPath)/secretproviderclass.yaml'
                 
@@ -138,24 +118,6 @@ stages:
                       $(k8sManifestsPath)/service.yaml
                       $(k8sManifestsPath)/ingress.yaml
                     containers: '$(acrName).azurecr.io/$(imageName):$(imageTag)'
-                
-                - task: Kubernetes@1
-                  displayName: 'Wait for Deployment Rollout'
-                  inputs:
-                    connectionType: 'Kubernetes Service Connection'
-                    kubernetesServiceEndpoint: 'AKS-Service-Connection'
-                    namespace: '$(namespace)'
-                    command: 'rollout'
-                    arguments: 'status deployment/learning-platform --timeout=5m'
-                
-                - task: Kubernetes@1
-                  displayName: 'Get Deployment Status'
-                  inputs:
-                    connectionType: 'Kubernetes Service Connection'
-                    kubernetesServiceEndpoint: 'AKS-Service-Connection'
-                    namespace: '$(namespace)'
-                    command: 'get'
-                    arguments: 'pods,svc,ingress'
                 
                 - script: |
                     echo "Deployment completed successfully!"
@@ -174,8 +136,6 @@ stages:
     jobs:
       - job: RunMigrations
         displayName: 'Execute Database Migrations'
-        pool:
-          vmImage: 'ubuntu-latest'
         
         steps:
           - task: AzureCLI@2
@@ -219,8 +179,6 @@ stages:
   #   jobs:
   #     - job: TestDeployment
   #       displayName: 'Verify Deployment'
-  #       pool:
-  #         vmImage: 'ubuntu-latest'
         
   #       steps:
   #         - task: AzureCLI@2
