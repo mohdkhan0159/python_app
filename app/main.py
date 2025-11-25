@@ -122,30 +122,30 @@ async def on_startup():
                 base_url = f"https://{storage_account}.blob.core.windows.net/{container}"
                 
                 sample_courses = [
-                    Course(title="Python for Beginners", description="Learn Python from scratch with hands-on examples.", thumbnail_path=f"{base_url}/python.png"),
-                    Course(title="Advanced Python", description="Master advanced Python techniques and best practices.", thumbnail_path=f"{base_url}/advanced_python.png"),
-                    Course(title="FastAPI Bootcamp", description="Build modern APIs with FastAPI framework.", thumbnail_path=f"{base_url}/fastapi.png"),
-                    Course(title="Docker & Kubernetes", description="Container orchestration and deployment.", thumbnail_path=f"{base_url}/docker_kubernetes.png"),
-                    Course(title="React for Beginners", description="Build interactive UIs with React.", thumbnail_path=f"{base_url}/react.png"),
-                    Course(title="Node.js Backend Development", description="Server-side JavaScript with Node.js.", thumbnail_path=f"{base_url}/nodejs.png"),
-                    Course(title="Azure Cloud Fundamentals", description="Cloud computing with Microsoft Azure.", thumbnail_path=f"{base_url}/azure.png"),
-                    Course(title="SQL Database Design", description="Design and optimize relational databases.", thumbnail_path=f"{base_url}/sql.png"),
-                    Course(title="DevOps with CI/CD", description="Automate deployment pipelines.", thumbnail_path=f"{base_url}/devops.png"),
-                    Course(title="Machine Learning with Python", description="Introduction to ML and AI.", thumbnail_path=f"{base_url}/ml.png"),
+                    Course(title="Python for Beginners", description="Learn Python from scratch with hands-on examples.", thumbnail_path=f"{base_url}/python.png", price_cents=1999),
+                    Course(title="Advanced Python", description="Master advanced Python techniques and best practices.", thumbnail_path=f"{base_url}/advanced_python.png", price_cents=2499),
+                    Course(title="FastAPI Bootcamp", description="Build modern APIs with FastAPI framework.", thumbnail_path=f"{base_url}/fastapi.png", price_cents=2799),
+                    Course(title="Docker & Kubernetes", description="Container orchestration and deployment.", thumbnail_path=f"{base_url}/docker_kubernetes.png", price_cents=2999),
+                    Course(title="React for Beginners", description="Build interactive UIs with React.", thumbnail_path=f"{base_url}/react.png", price_cents=2999),
+                    Course(title="Node.js Backend Development", description="Server-side JavaScript with Node.js.", thumbnail_path=f"{base_url}/nodejs.png", price_cents=3499),
+                    Course(title="Azure Cloud Fundamentals", description="Cloud computing with Microsoft Azure.", thumbnail_path=f"{base_url}/azure.png", price_cents=3999),
+                    Course(title="SQL Database Design", description="Design and optimize relational databases.", thumbnail_path=f"{base_url}/sql.png", price_cents=3999),
+                    Course(title="DevOps with CI/CD", description="Automate deployment pipelines.", thumbnail_path=f"{base_url}/devops.png", price_cents=4499),
+                    Course(title="Machine Learning with Python", description="Introduction to ML and AI.", thumbnail_path=f"{base_url}/ml.png", price_cents=4999),
                 ]
             else:
                 # Local: Use relative paths
                 sample_courses = [
-                    Course(title="Python for Beginners", description="Learn Python from scratch with hands-on examples.", thumbnail_path="/uploads/python.png"),
-                    Course(title="Advanced Python", description="Master advanced Python techniques and best practices.", thumbnail_path="/uploads/advanced_python.png"),
-                    Course(title="FastAPI Bootcamp", description="Build modern APIs with FastAPI framework.", thumbnail_path="/uploads/fastapi.png"),
-                    Course(title="Docker & Kubernetes", description="Container orchestration and deployment.", thumbnail_path="/uploads/docker_kubernetes.png"),
-                    Course(title="React for Beginners", description="Build interactive UIs with React.", thumbnail_path="/uploads/react.png"),
-                    Course(title="Node.js Backend Development", description="Server-side JavaScript with Node.js.", thumbnail_path="/uploads/nodejs.png"),
-                    Course(title="Azure Cloud Fundamentals", description="Cloud computing with Microsoft Azure.", thumbnail_path="/uploads/azure.png"),
-                    Course(title="SQL Database Design", description="Design and optimize relational databases.", thumbnail_path="/uploads/sql.png"),
-                    Course(title="DevOps with CI/CD", description="Automate deployment pipelines.", thumbnail_path="/uploads/devops.png"),
-                    Course(title="Machine Learning with Python", description="Introduction to ML and AI.", thumbnail_path="/uploads/ml.png"),
+                    Course(title="Python for Beginners", description="Learn Python from scratch with hands-on examples.", thumbnail_path="/uploads/python.png", price_cents=1999),
+                    Course(title="Advanced Python", description="Master advanced Python techniques and best practices.", thumbnail_path="/uploads/advanced_python.png", price_cents=2499),
+                    Course(title="FastAPI Bootcamp", description="Build modern APIs with FastAPI framework.", thumbnail_path="/uploads/fastapi.png", price_cents=2799),
+                    Course(title="Docker & Kubernetes", description="Container orchestration and deployment.", thumbnail_path="/uploads/docker_kubernetes.png", price_cents=2999),
+                    Course(title="React for Beginners", description="Build interactive UIs with React.", thumbnail_path="/uploads/react.png", price_cents=2999),
+                    Course(title="Node.js Backend Development", description="Server-side JavaScript with Node.js.", thumbnail_path="/uploads/nodejs.png", price_cents=3499),
+                    Course(title="Azure Cloud Fundamentals", description="Cloud computing with Microsoft Azure.", thumbnail_path="/uploads/azure.png", price_cents=3999),
+                    Course(title="SQL Database Design", description="Design and optimize relational databases.", thumbnail_path="/uploads/sql.png", price_cents=3999),
+                    Course(title="DevOps with CI/CD", description="Automate deployment pipelines.", thumbnail_path="/uploads/devops.png", price_cents=4499),
+                    Course(title="Machine Learning with Python", description="Introduction to ML and AI.", thumbnail_path="/uploads/ml.png", price_cents=4999),
                 ]
             
             session.add_all(sample_courses)
