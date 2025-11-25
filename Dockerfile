@@ -64,6 +64,8 @@ WORKDIR /app
 # Copy only necessary application files
 COPY app ./app
 COPY scripts ./scripts
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
