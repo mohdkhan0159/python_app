@@ -14,6 +14,7 @@ prometheus:
             requests:
               storage: 10Gi
 
+
 # Configure ServiceMonitor to scrape our app
 additionalServiceMonitors:
   - name: learning-platform-monitor
