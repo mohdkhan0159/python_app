@@ -31,6 +31,9 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title="Learning Platform")
 
+# Prometheus Instrumentation (must be before middleware)
+Instrumentator().instrument(app).expose(app)
+
 # Templates
 templates = Jinja2Templates(directory="app/templates")
 app.state.templates = templates
@@ -102,7 +105,6 @@ app.include_router(lessons.router)
 # -------------------------------------------------------
 @app.on_event("startup")
 async def on_startup():
-    Instrumentator().instrument(app).expose(app)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
