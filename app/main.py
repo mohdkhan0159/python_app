@@ -23,6 +23,7 @@ from .routes import (
 
 from .auth import get_current_user
 from .models import Course, Lesson
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # -------------------------------------------------------
 #   APP SETUP
@@ -101,7 +102,7 @@ app.include_router(lessons.router)
 # -------------------------------------------------------
 @app.on_event("startup")
 async def on_startup():
-
+    Instrumentator().instrument(app).expose(app)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
